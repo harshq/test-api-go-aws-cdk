@@ -1,10 +1,6 @@
-# Welcome to your CDK Go project!
+# Http apis with AWS CDK for Go
 
-This is a blank project for Go development with CDK.
-
-**NOTICE**: Go support is still in Developer Preview. This implies that APIs may
-change while we address early feedback from the community. We would love to hear
-about your experience through GitHub issues.
+Blog: https://harshq.medium.com/building-apps-with-aws-sdk-for-golang-api-gateway-and-lambda-b254858b1d71
 
 ## Useful commands
 
