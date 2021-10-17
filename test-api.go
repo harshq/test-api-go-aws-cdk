@@ -2,16 +2,18 @@ package main
 
 import (
 	"github.com/aws/aws-cdk-go/awscdk"
-	"github.com/aws/aws-cdk-go/awscdk/awssns"
+	"github.com/aws/aws-cdk-go/awscdk/awsapigatewayv2"
+	"github.com/aws/aws-cdk-go/awscdk/awsapigatewayv2integrations"
+	"github.com/aws/aws-cdk-go/awscdk/awslambdago"
 	"github.com/aws/constructs-go/constructs/v3"
 	"github.com/aws/jsii-runtime-go"
 )
 
-type TestApiStackProps struct {
+type CdkLambdaStackProps struct {
 	awscdk.StackProps
 }
 
-func NewTestApiStack(scope constructs.Construct, id string, props *TestApiStackProps) awscdk.Stack {
+func NewCdkLambdaStack(scope constructs.Construct, id string, props *CdkLambdaStackProps) awscdk.Stack {
 	var sprops awscdk.StackProps
 	if props != nil {
 		sprops = props.StackProps
@@ -20,18 +22,40 @@ func NewTestApiStack(scope constructs.Construct, id string, props *TestApiStackP
 
 	// The code that defines your stack goes here
 
-	// as an example, here's how you would define an AWS SNS topic:
-	awssns.NewTopic(stack, jsii.String("MyTopic"), &awssns.TopicProps{
-		DisplayName: jsii.String("MyCoolTopic"),
+	// Create a new api HTTP api on gateway v2.
+	api := awsapigatewayv2.NewHttpApi(stack, jsii.String("cdk-lambda-api"), &awsapigatewayv2.HttpApiProps{
+		CorsPreflight: &awsapigatewayv2.CorsPreflightOptions{
+			AllowOrigins: &[]*string{jsii.String("*")}, //
+			AllowMethods: &[]awsapigatewayv2.CorsHttpMethod{awsapigatewayv2.CorsHttpMethod_ANY},
+		},
+	})
+
+	// Create a new lambda function.
+	helloFunc := awslambdago.NewGoFunction(stack, jsii.String("hello-func"), &awslambdago.GoFunctionProps{
+		MemorySize: jsii.Number(128),
+		Entry:      jsii.String("./app"),
+	})
+
+	// Add a lambda proxy integration.
+	integ := awsapigatewayv2integrations.NewLambdaProxyIntegration(
+		&awsapigatewayv2integrations.LambdaProxyIntegrationProps{
+			Handler: helloFunc,
+		})
+
+	// Add a route to api.
+	api.AddRoutes(&awsapigatewayv2.AddRoutesOptions{
+		Integration: integ,
+		Path:        jsii.String("/hello"),
 	})
 
 	return stack
+
 }
 
 func main() {
 	app := awscdk.NewApp(nil)
 
-	NewTestApiStack(app, "TestApiStack", &TestApiStackProps{
+	NewCdkLambdaStack(app, "CdkLambdaStack", &CdkLambdaStackProps{
 		awscdk.StackProps{
 			Env: env(),
 		},
